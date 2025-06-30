@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tool Dự Đoán Tài Xỉu AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #050505, #0b0c1c);
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+    }
+    .neon-border {
+      box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    .glow-text {
+      text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+    }
+    @keyframes glow {
+      from { box-shadow: 0 0 10px #00f0ff; }
+      to { box-shadow: 0 0 40px #00f0ff; }
+    }
+    .pulse-ring {
+      animation: pulseRing 2s infinite;
+    }
+    @keyframes pulseRing {
+      0% { box-shadow: 0 0 0 0 rgba(0,255,255, 0.4); }
+      70% { box-shadow: 0 0 0 20px rgba(0,255,255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,255,255, 0); }
+    }
+  </style>
+</head>
+<body class="text-white flex flex-col items-center justify-center min-h-screen relative">
+  <div class="absolute inset-0 -z-10">
+    <lottie-player src="https://assets2.lottiefiles.com/packages/lf20_uegaufcf.json" background="transparent" speed="1" loop autoplay style="width:100vw; height:100vh;"></lottie-player>
+  </div>
+
+  <div id="loginPanel" class="relative max-w-md w-full bg-gradient-to-br from-black via-gray-900 to-gray-800 p-8 rounded-3xl neon-border backdrop-blur-lg animate__animated animate__fadeInDown animate__faster">
+    <h1 class="text-3xl font-extrabold text-center text-cyan-300 glow-text mb-6">ĐĂNG NHẬP HỆ THỐNG</h1>
+    <input id="username" type="text" placeholder="Tài khoản"
+      class="w-full mb-3 p-3 rounded-xl bg-black bg-opacity-50 text-cyan-200 placeholder-cyan-400 focus:outline-none">
+    <input id="password" type="password" placeholder="Mật khẩu"
+      class="w-full mb-3 p-3 rounded-xl bg-black bg-opacity-50 text-cyan-200 placeholder-cyan-400 focus:outline-none">
+    <button onclick="login()"
+      class="w-full bg-cyan-500 hover:bg-cyan-400 p-3 rounded-xl font-bold text-black transition">ĐĂNG NHẬP</button>
+    <p class="mt-4 text-sm text-cyan-400">Cre: Trần Quốc Trịnh</p>
+    <p id="loginError" class="text-red-400 mt-2 text-sm hidden">Sai tài khoản hoặc mật khẩu!</p>
+  </div>
+
+  <div id="toolPanel" class="hidden w-full">
+    <!-- Robot floating element -->
+    <div class="absolute top-12 left-1/2 transform -translate-x-1/2 animate__animated animate__fadeInDown animate__slow">
+      <lottie-player src="https://assets9.lottiefiles.com/packages/lf20_qp1q7mct.json" background="transparent" speed="1.2" style="width:160px; height:160px;" loop autoplay></lottie-player>
+    </div>
+
+    <!-- Core Panel -->
+    <div class="relative max-w-md w-full mx-auto bg-gradient-to-br from-black via-gray-900 to-gray-800 p-8 rounded-3xl neon-border backdrop-blur-lg animate__animated animate__fadeInUp animate__faster mt-20">
+      <h1 class="text-3xl font-extrabold text-center text-cyan-300 glow-text mb-6 animate__animated animate__flash animate__repeat-3">
+         DỰ ĐOÁN TÀI XỈU AI
+      </h1>
+      <input id="md5Input" type="text" placeholder="Nhập mã MD5 (32 ký tự)"
+        class="w-full p-4 mb-4 rounded-xl bg-black bg-opacity-50 text-cyan-200 placeholder-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-500 transition duration-300 shadow-xl animate__animated animate__zoomIn">
+      <button onclick="predictB52()"
+        class="w-full bg-cyan-500 hover:bg-cyan-400 p-4 rounded-xl font-bold text-black transition transform hover:scale-105 duration-300 animate__animated animate__pulse pulse-ring">
+         DỰ ĐOÁN NGAY
+      </button>
+      <div id="resultDisplay" class="mt-6 text-2xl font-bold text-center glow-text"></div>
+      <div id="detailsDisplay" class="mt-2 text-sm text-cyan-300 text-center whitespace-pre-line"></div>
+    </div>
+
+    <!-- History Section -->
+    <div class="mt-8 max-w-md w-full bg-gray-900 bg-opacity-70 p-4 rounded-xl mx-auto">
+      <h2 class="text-xl text-cyan-300 font-bold mb-2">Lịch sử dự đoán</h2>
+      <ul id="historyList" class="text-sm text-cyan-100 space-y-1 max-h-64 overflow-y-auto"></ul>
+    </div>
+
+    <audio id="soundSuccess" src="https://assets.mixkit.co/sfx/download/mixkit-arcade-bonus-alert-767.wav"></audio>
+    <audio id="soundError" src="https://assets.mixkit.co/sfx/download/mixkit-game-error-alert-240.wav"></audio>
+  </div>
+
+  <script>
+    function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const loginError = document.getElementById('loginError');
+      if (username === 'tranquoctrinh' && password === '200910') {
+        document.getElementById('loginPanel').classList.add('hidden');
+        document.getElementById('toolPanel').classList.remove('hidden');
+      } else {
+        loginError.classList.remove('hidden');
+      }
+    }
+
+    const historyList = [];
+    function predictB52() {
+      const inputEl = document.getElementById('md5Input');
+      const md5 = inputEl.value.trim().toLowerCase();
+      const resultEl = document.getElementById('resultDisplay');
+      const detailEl = document.getElementById('detailsDisplay');
+      const soundSuccess = document.getElementById('soundSuccess');
+      const soundError = document.getElementById('soundError');
+
+      if (!/^[a-f0-9]{32}$/.test(md5)) {
+        resultEl.innerText = ' Mã MD5 không hợp lệ';
+        resultEl.className = 'text-yellow-400 mt-6 text-xl font-bold animate__animated animate__shakeX';
+        detailEl.innerText = '';
+        soundError.play();
+        return;
+      }
+
+      const last3 = md5.slice(-6);
+      const numbers = [
+        parseInt(last3.slice(0, 2), 16),
+        parseInt(last3.slice(2, 4), 16),
+        parseInt(last3.slice(4, 6), 16),
+      ];
+      const total = numbers.reduce((a, b) => a + b, 0);
+      const mod = total % 100;
+      const isTai = mod >= 50;
+      const prediction = isTai ? 'TÀI' : 'XỈU';
+
+      resultEl.innerText = ` ${prediction} (AI phân tích)`;
+      resultEl.className = isTai ? 'text-green-400 mt-6 text-xl font-bold animate__animated animate__tada' : 'text-red-400 mt-6 text-xl font-bold animate__animated animate__tada';
+      detailEl.innerText = `Tổng 3 byte cuối: ${numbers.join(' + ')} = ${total}\nSố dựa vào: ${mod} → ${prediction}`;
+
+      historyList.unshift({ md5, prediction, mod });
+      updateHistory();
+      inputEl.value = '';
+      soundSuccess.play();
+    }
+
+    function updateHistory() {
+      const listEl = document.getElementById('historyList');
+      listEl.innerHTML = '';
+      const counts = { 'TÀI': 0, 'XỈU': 0 };
+
+      historyList.slice(0, 20).forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = `${entry.md5.slice(0, 8)}... → ${entry.prediction} (${entry.mod})`;
+        listEl.appendChild(li);
+        counts[entry.prediction]++;
+      });
+
+      const total = counts['TÀI'] + counts['XỈU'];
+      if (total > 0) {
+        const summary = document.createElement('li');
+        summary.className = 'mt-2 font-bold';
+        summary.textContent = `TÀI: ${counts['TÀI']} (${Math.round(counts['TÀI'] / total * 100)}%), XỈU: ${counts['XỈU']} (${Math.round(counts['XỈU'] / total * 100)}%)`;
+        listEl.insertBefore(summary, listEl.firstChild);
+      }
+    }
+  </script>
+</body>
+</html>
